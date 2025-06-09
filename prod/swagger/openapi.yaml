@@ -42,61 +42,11 @@ tags:
   - description: Support operations
     name: support
 paths:
-  /booking/heartbeat:
-    get:
-      operationId: bookingHeartbeat
-      responses:
-        "200":
-          description: Heartbeat
-          schema:
-            example: OK
-            type: string
-      summary: Heartbeat
-      tags:
-        - booking
-      x-google-backend:
-        address: https://booking-service-ee3nwblsmq-uc.a.run.app
-        path_translation: APPEND_PATH_TO_ADDRESS
   /bookings:
-    post:
-      operationId: createBooking
-      parameters:
-        - description: The booking to create
-          in: body
-          name: booking
-          required: true
-          schema:
-            $ref: "#/definitions/BookingRequest"
-      responses:
-        "201":
-          description: The created booking
-          schema:
-            $ref: "#/definitions/APIResponse"
-        "404":
-          description: The listing was not found
-          schema:
-            $ref: "#/definitions/APIResponse"
-        default:
-          description: Default
-          schema:
-            $ref: "#/definitions/DefaultResponse"
-      security:
-        - jwtAuth: []
-      summary: Book a stay
-      tags:
-        - booking
-      x-google-backend:
-        address: https://booking-service-ee3nwblsmq-uc.a.run.app
-        path_translation: APPEND_PATH_TO_ADDRESS
-  /bookings/user/{id}:
     get:
-      operationId: getAllBookingsForUser
+      description: Returns all bookings belonging to the currently authenticated user. User ID is extracted from the JWT token. Use this endpoint for "my bookings" in the UI.
+      operationId: bookingsGetAllBookings
       parameters:
-        - description: User ID
-          in: path
-          name: id
-          required: true
-          type: string
         - default: 1
           description: Page number (starts at 1)
           in: query
@@ -114,14 +64,100 @@ paths:
           type: integer
       responses:
         "200":
-          description: All bookings for a user
+          description: All bookings for the authenticated user
+          schema:
+            $ref: "#/definitions/BookingsResponse"
+        "400":
+          description: Bad request (invalid parameters)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
         - jwtAuth: []
-      summary: Get all bookings for a user
+      summary: Get all bookings for the authenticated user ("my bookings")
+      tags:
+        - booking
+      x-google-backend:
+        address: https://booking-service-ee3nwblsmq-uc.a.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+    post:
+      description: Create a new booking for a listing.
+      operationId: bookingsCreateBooking
+      parameters:
+        - description: The booking to create
+          in: body
+          name: booking
+          required: true
+          schema:
+            $ref: "#/definitions/BookingRequest"
+      responses:
+        "201":
+          description: The created booking
+          schema:
+            $ref: "#/definitions/BookingResponse"
+        "400":
+          description: Bad request (invalid booking data)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: The listing was not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        default:
+          description: Default error response
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+      security:
+        - jwtAuth: []
+      summary: Book a stay
+      tags:
+        - booking
+      x-google-backend:
+        address: https://booking-service-ee3nwblsmq-uc.a.run.app
+        path_translation: APPEND_PATH_TO_ADDRESS
+  /bookings/heartbeat:
+    get:
+      description: Health check endpoint for the booking service.
+      operationId: bookingsHeartbeat
+      responses:
+        "200":
+          description: Service is healthy
+          schema:
+            example: OK
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        default:
+          description: Default error response
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+      security: []
+      summary: Heartbeat
       tags:
         - booking
       x-google-backend:
@@ -129,7 +165,8 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /bookings/{id}:
     get:
-      operationId: getBooking
+      description: Retrieve a booking by its ID.
+      operationId: bookingsGetBookingById
       parameters:
         - description: Booking ID
           in: path
@@ -139,11 +176,27 @@ paths:
           type: string
       responses:
         "200":
-          description: A booking
+          description: The booking
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/BookingResponse"
+        "400":
+          description: Bad request (invalid ID)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Booking not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -156,7 +209,8 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /bookings/{id}/accept:
     patch:
-      operationId: acceptBooking
+      description: Accept a booking by its ID.
+      operationId: bookingsAcceptBookingById
       parameters:
         - description: Booking ID
           in: path
@@ -171,11 +225,27 @@ paths:
             $ref: "#/definitions/AcceptBookingRequest"
       responses:
         "200":
-          description: The Accepted booking
+          description: The accepted booking
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/BookingResponse"
+        "400":
+          description: Bad request (invalid data)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Booking not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -188,7 +258,8 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /bookings/{id}/cancel:
     patch:
-      operationId: cancelBooking
+      description: Cancel a booking by its ID.
+      operationId: bookingsCancelBookingById
       parameters:
         - description: Booking ID
           in: path
@@ -205,9 +276,25 @@ paths:
         "200":
           description: The cancelled booking
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/BookingResponse"
+        "400":
+          description: Bad request (invalid data)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Booking not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -220,7 +307,8 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /bookings/{id}/reject:
     patch:
-      operationId: rejectBooking
+      description: Reject a booking by its ID.
+      operationId: bookingsRejectBookingById
       parameters:
         - description: Booking ID
           in: path
@@ -254,9 +342,25 @@ paths:
         "200":
           description: The rejected booking
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/BookingResponse"
+        "400":
+          description: Bad request (invalid data)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Booking not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1047,7 +1151,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /documents:
     post:
-      operationId: createDocument
+      operationId: documentsCreateDocument
       parameters:
         - description: The document to create
           in: body
@@ -1059,9 +1163,25 @@ paths:
         "201":
           description: The created document
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/DocumentResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1074,7 +1194,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /documents/heartbeat:
     get:
-      operationId: documentHeartbeat
+      operationId: documentsHeartbeat
       responses:
         "200":
           description: Heartbeat
@@ -1093,7 +1213,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /documents/{id}:
     delete:
-      operationId: deleteDocument
+      operationId: documentsDeleteDocument
       parameters:
         - description: Document ID
           in: path
@@ -1105,8 +1225,24 @@ paths:
       responses:
         "204":
           description: Document deleted
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1118,7 +1254,7 @@ paths:
         address: https://document-service-ee3nwblsmq-uc.a.run.app
         path_translation: APPEND_PATH_TO_ADDRESS
     put:
-      operationId: overwriteDocument
+      operationId: documentsOverwriteDocument
       parameters:
         - description: Document ID
           in: path
@@ -1129,11 +1265,27 @@ paths:
           type: string
       responses:
         "200":
-          description: Document to be overwritten
+          description: The overwritten document
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/DocumentResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1146,7 +1298,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /listings:
     get:
-      operationId: getAllListings
+      operationId: listingsGetAllListings
       parameters:
         - description: Latitude of the user's location
           format: double
@@ -1179,9 +1331,25 @@ paths:
         "200":
           description: All listings
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/GetAllListingsResponse"
+        "400":
+          description: Bad request (invalid parameters)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/Error404Response"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       summary: Get all listings
@@ -1192,7 +1360,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
     post:
       description: Create a new listing for a user
-      operationId: createListing
+      operationId: listingsCreateListing
       parameters:
         - description: The listing to create
           in: body
@@ -1204,9 +1372,9 @@ paths:
         "201":
           description: The created listing
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/CreateListingResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1219,20 +1387,22 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /listings/address:
     get:
-      operationId: addressAutoComplete
+      description: |
+        Returns a list of address suggestions based on the user's query and location. Useful for implementing address autocomplete features in the UI.
+      operationId: listingsAddressAutoComplete
       parameters:
-        - description: Address to search for
+        - description: Address to search for (partial or full address string)
           in: query
           name: q
           required: true
           type: string
-        - description: Latitude of the user's location
+        - description: Latitude of the user's location (for proximity ranking)
           format: double
           in: query
           name: lat
           required: true
           type: number
-        - description: Longitude of the user's location
+        - description: Longitude of the user's location (for proximity ranking)
           format: double
           in: query
           name: lon
@@ -1240,11 +1410,27 @@ paths:
           type: number
       responses:
         "200":
-          description: Successful response
+          description: List of address suggestions matching the query and location.
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/AddressAutoCompleteResponse"
+        "400":
+          description: Bad request (invalid parameters)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/Error404Response"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1257,7 +1443,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /listings/heartbeat:
     get:
-      operationId: listingHeartbeat
+      operationId: listingsHeartbeat
       responses:
         "200":
           description: Heartbeat
@@ -1271,10 +1457,10 @@ paths:
         address: https://listing-service-ee3nwblsmq-uc.a.run.app
         path_translation: APPEND_PATH_TO_ADDRESS
   /listings/search:
-    get:
-      operationId: searchListings
+    post:
+      operationId: listingsSearchListings
       parameters:
-        - description: Search criteria
+        - description: Search criteria (location, dates, guests, price, instant_book, category, keywords, gender, etc.)
           in: body
           name: search
           required: true
@@ -1282,11 +1468,27 @@ paths:
             $ref: "#/definitions/SearchListingsRequest"
       responses:
         "200":
-          description: All listings for a user
+          description: Search results (listing summaries)
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/SearchListingsResponse"
+        "400":
+          description: Bad request (invalid parameters)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/Error404Response"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1297,16 +1499,11 @@ paths:
       x-google-backend:
         address: https://listing-service-ee3nwblsmq-uc.a.run.app
         path_translation: APPEND_PATH_TO_ADDRESS
-  /listings/user/{id}:
+  /listings/user:
     get:
-      operationId: getAllListingsForUser
+      description: Returns all listings belonging to the currently authenticated user. User ID is extracted from the JWT token. Use this endpoint for "my listings" in the UI.
+      operationId: listingsGetAllListingsForCurrentUser
       parameters:
-        - description: User ID
-          in: path
-          maxLength: 32
-          name: id
-          required: true
-          type: string
         - default: 1
           description: Page number (starts at 1)
           in: query
@@ -1324,16 +1521,32 @@ paths:
           type: integer
       responses:
         "200":
-          description: All listings for a user
+          description: All listings for the authenticated user
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/GetAllListingsResponse"
+        "400":
+          description: Bad request (invalid parameters)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/Error404Response"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
         - jwtAuth: []
-      summary: Get all listings for a user
+      summary: Get all listings for the authenticated user ("my listings")
       tags:
         - listing
       x-google-backend:
@@ -1341,7 +1554,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /listings/{id}:
     delete:
-      operationId: deleteListing
+      operationId: listingsDeleteListing
       parameters:
         - description: Listing ID
           in: path
@@ -1352,9 +1565,9 @@ paths:
         "200":
           description: Listing deleted
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/DeleteListingResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1366,7 +1579,7 @@ paths:
         address: https://listing-service-ee3nwblsmq-uc.a.run.app
         path_translation: APPEND_PATH_TO_ADDRESS
     get:
-      operationId: getListing
+      operationId: listingsGetListing
       parameters:
         - description: Listing ID
           in: path
@@ -1377,9 +1590,25 @@ paths:
         "200":
           description: A listing
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/GetListingResponse"
+        "400":
+          description: Bad request (invalid parameters)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/Error404Response"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1391,7 +1620,7 @@ paths:
         address: https://listing-service-ee3nwblsmq-uc.a.run.app
         path_translation: APPEND_PATH_TO_ADDRESS
     put:
-      operationId: updateListing
+      operationId: listingsUpdateListing
       parameters:
         - description: Listing ID
           in: path
@@ -1408,9 +1637,9 @@ paths:
         "200":
           description: The updated listing
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/UpdateListingResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1423,7 +1652,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /listings/{id}/report:
     post:
-      operationId: reportListing
+      operationId: listingsReportListing
       parameters:
         - description: Listing ID
           in: path
@@ -1440,9 +1669,9 @@ paths:
         "201":
           description: The created report
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/ReportListingResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1455,7 +1684,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /messages:
     post:
-      operationId: createMessage
+      operationId: messagesCreateMessage
       parameters:
         - description: The message to create
           in: body
@@ -1467,9 +1696,25 @@ paths:
         "201":
           description: The created message
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/MessageResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1482,7 +1727,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /messages/heartbeat:
     get:
-      operationId: messageHeartbeat
+      operationId: messagesHeartbeat
       responses:
         "200":
           description: Heartbeat
@@ -1493,6 +1738,22 @@ paths:
           description: Bad request
           schema:
             $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        default:
+          description: Default error response
+          schema:
+            $ref: "#/definitions/DefaultResponse"
       summary: Message service heartbeat
       tags:
         - message
@@ -1501,7 +1762,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /messages/user/{id}:
     get:
-      operationId: getAllMessagesForUser
+      operationId: messagesGetAllMessagesForUser
       parameters:
         - description: User ID
           in: path
@@ -1528,9 +1789,25 @@ paths:
         "200":
           description: All messages for a user
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/MessagesResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1543,7 +1820,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /messages/{id}:
     get:
-      operationId: getMessage
+      operationId: messagesGetMessage
       parameters:
         - description: Message ID
           in: path
@@ -1556,9 +1833,25 @@ paths:
         "200":
           description: A message
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/MessageResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1571,7 +1864,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /messages/{id}/archive:
     patch:
-      operationId: archiveMessage
+      operationId: messagesArchiveMessage
       parameters:
         - description: Message ID
           in: path
@@ -1584,9 +1877,25 @@ paths:
         "200":
           description: The archived message
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/MessageResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1599,7 +1908,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /messages/{id}/read:
     patch:
-      operationId: markMessageAsRead
+      operationId: messagesMarkMessageAsRead
       parameters:
         - description: Message ID
           in: path
@@ -1612,9 +1921,25 @@ paths:
         "200":
           description: The read message
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/MessageResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1627,7 +1952,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /messages/{id}/unread:
     patch:
-      operationId: markMessageAsUnread
+      operationId: messagesMarkMessageAsUnread
       parameters:
         - description: Message ID
           in: path
@@ -1640,9 +1965,25 @@ paths:
         "200":
           description: The unread message
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/MessageResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1674,7 +2015,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /payments/pay:
     post:
-      operationId: createPayment
+      operationId: paymentCreatePayment
       parameters:
         - description: The payment to create
           in: body
@@ -1686,9 +2027,21 @@ paths:
         "201":
           description: The created payment
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/CreatePaymentResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1701,16 +2054,28 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /payments/payment-methods:
     get:
-      operationId: getAllPaymentMethods
+      operationId: paymentGetAllPaymentMethods
       responses:
         "200":
           description: All payment methods
           schema:
-            $ref: "#/definitions/PaymentMethodsResponse"
-        default:
-          description: Default
+            $ref: "#/definitions/PaymentMethodsPaginatedResponse"
+        "400":
+          description: Bad request
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        default:
+          description: Default error response
+          schema:
+            $ref: "#/definitions/DefaultResponse"
       security:
         - jwtAuth: []
       summary: Get all available payment methods
@@ -1721,7 +2086,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /payments/user/{id}/payment-methods:
     get:
-      operationId: getAllPaymentMethodsForUser
+      operationId: paymentGetAllPaymentMethodsForUser
       parameters:
         - description: User ID
           in: path
@@ -1734,9 +2099,21 @@ paths:
         "200":
           description: All payment methods for a user
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/PaymentMethodsPaginatedResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1748,7 +2125,7 @@ paths:
         address: https://payment-service-ee3nwblsmq-uc.a.run.app
         path_translation: APPEND_PATH_TO_ADDRESS
     post:
-      operationId: createPaymentMethodForUser
+      operationId: paymentCreatePaymentMethodForUser
       parameters:
         - description: User ID
           in: path
@@ -1767,9 +2144,21 @@ paths:
         "201":
           description: The created payment method
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/PaymentMethodResponseEnvelope"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1782,7 +2171,7 @@ paths:
         path_translation: APPEND_PATH_TO_ADDRESS
   /payments/{id}:
     get:
-      operationId: getPayment
+      operationId: paymentGetPayment
       parameters:
         - description: Payment ID
           in: path
@@ -1794,9 +2183,25 @@ paths:
         "200":
           description: A payment
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/GetPaymentResponse"
+        "400":
+          description: Bad request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "401":
+          description: Unauthorized (missing or invalid token)
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "404":
+          description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
+          schema:
+            $ref: "#/definitions/DefaultResponse"
         default:
-          description: Default
+          description: Default error response
           schema:
             $ref: "#/definitions/DefaultResponse"
       security:
@@ -1855,9 +2260,13 @@ paths:
         "200":
           description: List of reviews matching filters
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/ReviewsResponse"
         "400":
           description: Invalid request
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
           schema:
             $ref: "#/definitions/DefaultResponse"
         default:
@@ -1883,13 +2292,17 @@ paths:
         "201":
           description: The created review
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/CreateReviewResponse"
         "400":
           description: Invalid request
           schema:
             $ref: "#/definitions/DefaultResponse"
         "404":
           description: Not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
           schema:
             $ref: "#/definitions/DefaultResponse"
         default:
@@ -1934,9 +2347,13 @@ paths:
         "200":
           description: Review deleted
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/DeleteReviewResponse"
         "404":
           description: Review not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
           schema:
             $ref: "#/definitions/DefaultResponse"
         default:
@@ -1961,9 +2378,13 @@ paths:
         "200":
           description: The review
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/GetReviewResponse"
         "404":
           description: Review not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
           schema:
             $ref: "#/definitions/DefaultResponse"
         default:
@@ -1994,13 +2415,17 @@ paths:
         "200":
           description: The updated review
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/UpdateReviewResponse"
         "400":
           description: Invalid request
           schema:
             $ref: "#/definitions/DefaultResponse"
         "404":
           description: Review not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
           schema:
             $ref: "#/definitions/DefaultResponse"
         default:
@@ -2032,9 +2457,13 @@ paths:
         "200":
           description: Review reported successfully
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/ReportReviewResponse"
         "404":
           description: Review not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
           schema:
             $ref: "#/definitions/DefaultResponse"
         default:
@@ -2066,9 +2495,13 @@ paths:
         "200":
           description: Response added successfully
           schema:
-            $ref: "#/definitions/APIResponse"
+            $ref: "#/definitions/RespondToReviewResponse"
         "404":
           description: Review not found
+          schema:
+            $ref: "#/definitions/DefaultResponse"
+        "500":
+          description: Internal server error
           schema:
             $ref: "#/definitions/DefaultResponse"
         default:
@@ -3217,14 +3650,23 @@ paths:
 definitions:
   DefaultResponse:
     type: object
+    description: Standard error response model for failed requests.
     properties:
       success:
         type: boolean
+        description: Indicates if the request was successful.
+        example: false
       error:
         type: string
+        description: Error message describing the failure.
+        example: Invalid booking ID.
       toast:
         type: string
-        maxLength: 255
+        description: Optional toast message for the client UI.
+        example: Unable to process your request.
+    required:
+      - success
+      - error
   UserAdminUpdateRequest:
     type: object
     properties:
@@ -3363,6 +3805,115 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  Booking:
+    type: object
+    properties:
+      id:
+        type: string
+        example: bkg_001
+      listing_id:
+        type: string
+        example: lst_101
+      user_id:
+        type: string
+        example: usr_201
+      check_in:
+        type: string
+        format: date-time
+        example: "2025-06-01T14:00:00Z"
+      check_out:
+        type: string
+        format: date-time
+        example: "2025-06-05T11:00:00Z"
+      amount:
+        type: number
+        format: float
+        example: 500
+      rating:
+        type: number
+        format: float
+        example: 4.5
+      days:
+        type: integer
+        example: 4
+      payment_id:
+        type: string
+        example: pay_001
+      status:
+        type: string
+        enum:
+          - pending
+          - accepted
+          - rejected
+          - cancelled
+          - completed
+          - awaiting_payment
+        example: pending
+      guests:
+        type: integer
+        example: 2
+  BookingsResponse:
+    type: object
+    description: Paginated response containing a list of bookings.
+    properties:
+      success:
+        type: boolean
+        description: Indicates if the request was successful.
+        example: true
+      data:
+        type: array
+        description: List of booking objects.
+        items:
+          $ref: "#/definitions/Booking"
+        example:
+          - id: bkg_001
+            listing_id: lst_101
+            user_id: usr_201
+            check_in: "2025-06-01T14:00:00Z"
+            check_out: "2025-06-05T11:00:00Z"
+            amount: 500
+            rating: 4.5
+            days: 4
+            payment_id: pay_001
+            status: pending
+            guests: 2
+      meta:
+        type: object
+        description: Pagination metadata.
+        properties:
+          page:
+            type: integer
+            description: Current page number
+            example: 1
+          limit:
+            type: integer
+            description: Number of items per page
+            example: 10
+          total:
+            type: integer
+            description: Total number of items
+            example: 25
+          pages:
+            type: integer
+            description: Total number of pages
+            example: 3
+        required:
+          - page
+          - limit
+          - total
+          - pages
+      toast:
+        type: string
+        description: Optional toast message for the client UI.
+        example: Bookings retrieved successfully.
+      error:
+        type: string
+        description: Error message, if any.
+        example: null
+    required:
+      - success
+      - data
+      - meta
   BookingRequest:
     type: object
     properties:
@@ -3387,21 +3938,28 @@ definitions:
       - check_in
       - check_out
       - guests
-  APIResponse:
+  BookingResponse:
     type: object
+    description: Response containing a single booking object.
     properties:
       success:
         type: boolean
-      error:
-        type: string
+        description: Indicates if the request was successful.
+        example: true
+      data:
+        $ref: "#/definitions/Booking"
+        description: The booking object returned by the API.
       toast:
         type: string
-      data:
-        type: object
-        description: Generic data payload (varies by endpoint)
+        description: Optional toast message for the client UI.
+        example: Booking created successfully.
+      error:
+        type: string
+        description: Error message, if any.
+        example: null
     required:
       - success
-      - toast
+      - data
   AcceptBookingRequest:
     type: object
     properties:
@@ -3454,6 +4012,174 @@ definitions:
       - type
       - user_id
       - documents
+  Document:
+    type: object
+    description: Represents a user-uploaded document.
+    properties:
+      id:
+        type: string
+        description: Unique document ID
+        example: doc_12345
+      user_id:
+        type: string
+        description: ID of the user who owns the document
+        example: usr_201
+      type:
+        type: string
+        description: Document type (see enum DocumentType)
+        example: Listing
+      name:
+        type: string
+        description: Name of the document
+        example: passport.pdf
+      url:
+        type: string
+        format: uri
+        description: Publicly accessible URL for the document
+        example: https://cdn.example.com/docs/passport.pdf
+      created_at:
+        type: string
+        format: date-time
+        description: Document creation timestamp
+        example: "2025-06-08T12:00:00Z"
+      updated_at:
+        type: string
+        format: date-time
+        description: Last update timestamp
+        example: "2025-06-08T12:00:00Z"
+    required:
+      - id
+      - user_id
+      - type
+      - name
+      - url
+      - created_at
+      - updated_at
+  DocumentResponse:
+    type: object
+    description: Response containing a single document object.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        $ref: "#/definitions/Document"
+        description: The document object returned by the API.
+      toast:
+        type: string
+        example: Document uploaded successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
+  Location:
+    type: object
+    properties:
+      latitude:
+        type: number
+        format: double
+      longitude:
+        type: number
+        format: double
+  ListingsResponse:
+    type: object
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      description:
+        type: string
+      location:
+        $ref: "#/definitions/Location"
+      price:
+        type: number
+        format: double
+      available:
+        type: boolean
+      thumbnail:
+        type: string
+        format: uri
+      distance:
+        type: number
+        format: double
+      created_at:
+        type: string
+        format: date-time
+      max_guests:
+        type: integer
+        format: int32
+      rating:
+        type: number
+        format: double
+      instant_book:
+        type: boolean
+      active:
+        type: boolean
+      amenities:
+        type: array
+        items:
+          type: string
+      cancellation_policy:
+        type: string
+      category:
+        type: object
+        properties:
+          name:
+            type: string
+          code:
+            type: string
+          description:
+            type: string
+  GetAllListingsResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      toast:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/ListingsResponse"
+      meta:
+        type: object
+        properties:
+          page:
+            type: integer
+            description: Current page number
+          limit:
+            type: integer
+            description: Number of items per page
+          total:
+            type: integer
+            description: Total number of items
+          pages:
+            type: integer
+            description: Total number of pages
+        required:
+          - page
+          - limit
+          - total
+          - pages
+    required:
+      - success
+      - data
+      - meta
+  Error404Response:
+    type: object
+    properties:
+      code:
+        type: integer
+        example: 404
+      message:
+        type: string
+        example: Not found
+    required:
+      - code
+      - message
   Host:
     type: object
     properties:
@@ -3563,6 +4289,52 @@ definitions:
       - cancellation_policy
       - address
       - category
+  CreateListingResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      toast:
+        type: string
+      data:
+        $ref: "#/definitions/ListingsResponse"
+    required:
+      - success
+      - data
+  AddressSuggestion:
+    type: object
+    properties:
+      address:
+        $ref: "#/definitions/Address"
+      description:
+        type: string
+      place_id:
+        type: string
+    required:
+      - address
+      - description
+      - place_id
+  AddressAutoCompleteResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/AddressSuggestion"
+      meta:
+        type: object
+        properties:
+          total:
+            type: integer
+            description: Total number of suggestions
+        required:
+          - total
+    required:
+      - success
+      - data
+      - meta
   SearchListingsRequest:
     type: object
     properties:
@@ -3596,12 +4368,128 @@ definitions:
         format: double
       instant_book:
         type: boolean
+      category:
+        type: string
+      keywords:
+        type: string
+      gender:
+        type: string
+        description: Filter by host gender
       page:
         type: integer
         format: int32
-      page_size:
+      limit:
         type: integer
         format: int32
+  SearchListingSummary:
+    type: object
+    properties:
+      id:
+        type: string
+      title:
+        type: string
+      price:
+        type: number
+        format: double
+      location:
+        $ref: "#/definitions/Location"
+      thumbnail:
+        type: string
+        format: uri
+      rating:
+        type: number
+        format: double
+      category:
+        type: object
+        properties:
+          name:
+            type: string
+          code:
+            type: string
+      available:
+        type: boolean
+      distance:
+        type: number
+        format: double
+      instant_book:
+        type: boolean
+      short_description:
+        type: string
+    required:
+      - id
+      - title
+      - price
+      - location
+      - thumbnail
+      - available
+  SearchListingsResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      toast:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/SearchListingSummary"
+      meta:
+        type: object
+        properties:
+          page:
+            type: integer
+          limit:
+            type: integer
+          total:
+            type: integer
+          pages:
+            type: integer
+        required:
+          - page
+          - limit
+          - total
+          - pages
+    required:
+      - success
+      - data
+      - meta
+  GetListingResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      toast:
+        type: string
+      data:
+        $ref: "#/definitions/ListingsResponse"
+    required:
+      - success
+      - data
+  UpdateListingResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      toast:
+        type: string
+      data:
+        $ref: "#/definitions/ListingsResponse"
+    required:
+      - success
+      - data
+  DeleteListingResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      toast:
+        type: string
+      id:
+        type: string
+        description: The ID of the deleted listing
+    required:
+      - success
+      - id
   ReportListingRequest:
     type: object
     required:
@@ -3623,6 +4511,19 @@ definitions:
       reported_by:
         type: string
         description: User ID of the person reporting the listing
+  ReportListingResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      toast:
+        type: string
+      report_id:
+        type: string
+        description: The ID of the created report
+    required:
+      - success
+      - report_id
   MessageRequest:
     type: object
     properties:
@@ -3637,6 +4538,106 @@ definitions:
         maxLength: 32
     required:
       - message
+  Message:
+    type: object
+    properties:
+      id:
+        type: string
+      listing_id:
+        type: string
+      booking_id:
+        type: string
+      message:
+        type: string
+      type:
+        type: string
+        maxLength: 32
+      created_at:
+        type: string
+        format: date-time
+      updated_at:
+        type: string
+        format: date-time
+  MessageResponse:
+    type: object
+    description: Response containing a single message object.
+    properties:
+      success:
+        type: boolean
+        description: Indicates if the request was successful.
+        example: true
+      data:
+        $ref: "#/definitions/Message"
+        description: The message object returned by the API.
+      toast:
+        type: string
+        description: Optional toast message for the client UI.
+        example: Message sent successfully.
+      error:
+        type: string
+        description: Error message, if any.
+        example: null
+    required:
+      - success
+      - data
+  MessagesResponse:
+    type: object
+    description: Paginated response containing a list of messages.
+    properties:
+      success:
+        type: boolean
+        description: Indicates if the request was successful.
+        example: true
+      data:
+        type: array
+        description: List of message objects.
+        items:
+          $ref: "#/definitions/Message"
+        example:
+          - id: msg_001
+            listing_id: lst_101
+            booking_id: bkg_001
+            message: Hello!
+            type: guest
+            created_at: "2025-06-01T14:00:00Z"
+            updated_at: "2025-06-01T14:00:00Z"
+      meta:
+        type: object
+        description: Pagination metadata.
+        properties:
+          page:
+            type: integer
+            description: Current page number
+            example: 1
+          limit:
+            type: integer
+            description: Number of items per page
+            example: 10
+          total:
+            type: integer
+            description: Total number of items
+            example: 25
+          pages:
+            type: integer
+            description: Total number of pages
+            example: 3
+        required:
+          - page
+          - limit
+          - total
+          - pages
+      toast:
+        type: string
+        description: Optional toast message for the client UI.
+        example: Messages retrieved successfully.
+      error:
+        type: string
+        description: Error message, if any.
+        example: null
+    required:
+      - success
+      - data
+      - meta
   PaymentRequest:
     type: object
     properties:
@@ -3657,6 +4658,53 @@ definitions:
       payment_date:
         type: string
         format: date-time
+  PaymentResponse:
+    type: object
+    properties:
+      id:
+        type: string
+      booking_id:
+        type: string
+      amount:
+        type: number
+        format: double
+      currency:
+        type: string
+        maxLength: 3
+      payment_method:
+        type: string
+        maxLength: 32
+      payment_status:
+        type: string
+        maxLength: 32
+      payment_date:
+        type: string
+        format: date-time
+      created_at:
+        type: string
+        format: date-time
+      updated_at:
+        type: string
+        format: date-time
+  CreatePaymentResponse:
+    type: object
+    description: Response containing a newly created payment object.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        $ref: "#/definitions/PaymentResponse"
+        description: The payment object returned by the API.
+      toast:
+        type: string
+        example: Payment created successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
   PaymentMethodResponse:
     type: object
     properties:
@@ -3682,10 +4730,49 @@ definitions:
       updated_at:
         type: string
         format: date-time
-  PaymentMethodsResponse:
-    type: array
-    items:
-      $ref: "#/definitions/PaymentMethodResponse"
+  PaymentMethodsPaginatedResponse:
+    type: object
+    description: Paginated response containing a list of payment methods.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/PaymentMethodResponse"
+        description: List of payment methods.
+      meta:
+        type: object
+        description: Pagination metadata.
+        properties:
+          page:
+            type: integer
+            example: 1
+          limit:
+            type: integer
+            example: 10
+          total:
+            type: integer
+            example: 25
+          pages:
+            type: integer
+            example: 3
+        required:
+          - page
+          - limit
+          - total
+          - pages
+      toast:
+        type: string
+        example: Payment methods retrieved successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
+      - meta
   PaymentMethodRequest:
     type: object
     properties:
@@ -3706,6 +4793,161 @@ definitions:
     required:
       - user_id
       - payment_method
+  PaymentMethodResponseEnvelope:
+    type: object
+    description: Response containing a single payment method object.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        $ref: "#/definitions/PaymentMethodResponse"
+        description: The payment method object returned by the API.
+      toast:
+        type: string
+        example: Payment method added successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
+  GetPaymentResponse:
+    type: object
+    description: Response containing a single payment object.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        $ref: "#/definitions/PaymentResponse"
+        description: The payment object returned by the API.
+      toast:
+        type: string
+        example: Payment retrieved successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
+  ReviewEdit:
+    type: object
+    properties:
+      version:
+        type: integer
+      updated_at:
+        type: string
+        format: date-time
+      changes:
+        type: object
+        additionalProperties: true
+    required:
+      - version
+      - updated_at
+      - changes
+  Review:
+    type: object
+    properties:
+      id:
+        type: string
+      author:
+        type: string
+        description: The user writing the review
+      target:
+        type: string
+        description: The user or listing being reviewed
+      type:
+        type: string
+        enum:
+          - user
+          - listing
+        description: Type of entity being reviewed
+      category:
+        type: string
+      overall_rating:
+        type: number
+      comment:
+        type: string
+      emoji_sentiment:
+        type: string
+      metrics:
+        type: object
+        additionalProperties: true
+      booking_id:
+        type: string
+      listing_id:
+        type: string
+      created_at:
+        type: string
+        format: date-time
+      updated_at:
+        type: string
+        format: date-time
+      status:
+        type: string
+      version:
+        type: integer
+      edit_history:
+        type: array
+        items:
+          $ref: "#/definitions/ReviewEdit"
+    required:
+      - id
+      - author
+      - target
+      - type
+      - category
+      - overall_rating
+      - metrics
+      - created_at
+      - updated_at
+      - status
+      - version
+      - edit_history
+  ReviewsResponse:
+    type: object
+    description: Paginated response containing a list of reviews.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/Review"
+        description: List of reviews.
+      meta:
+        type: object
+        description: Pagination metadata.
+        properties:
+          page:
+            type: integer
+            example: 1
+          limit:
+            type: integer
+            example: 10
+          total:
+            type: integer
+            example: 25
+          pages:
+            type: integer
+            example: 3
+        required:
+          - page
+          - limit
+          - total
+          - pages
+      toast:
+        type: string
+        example: Reviews retrieved successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
+      - meta
   ReviewRequest:
     type: object
     required:
@@ -3751,6 +4993,63 @@ definitions:
       booking_id:
         type: string
         description: Associated booking ID if applicable
+  CreateReviewResponse:
+    type: object
+    description: Response containing the created review object.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        $ref: "#/definitions/Review"
+        description: The created review object.
+      toast:
+        type: string
+        example: Review created successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
+  GetReviewResponse:
+    type: object
+    description: Response containing a single review object.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        $ref: "#/definitions/Review"
+        description: The review object returned by the API.
+      toast:
+        type: string
+        example: Review retrieved successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
+  DeleteReviewResponse:
+    type: object
+    description: Response confirming review deletion.
+    properties:
+      success:
+        type: boolean
+        example: true
+      id:
+        type: string
+        description: The ID of the deleted review.
+      toast:
+        type: string
+        example: Review deleted successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - id
   ReviewUpdateRequest:
     type: object
     properties:
@@ -3771,6 +5070,25 @@ definitions:
         type: object
         description: Category-specific metrics (flexible)
         additionalProperties: true
+  UpdateReviewResponse:
+    type: object
+    description: Response containing the updated review object.
+    properties:
+      success:
+        type: boolean
+        example: true
+      data:
+        $ref: "#/definitions/Review"
+        description: The updated review object.
+      toast:
+        type: string
+        example: Review updated successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - data
   ReportReviewRequest:
     type: object
     required:
@@ -3792,6 +5110,25 @@ definitions:
       reported_by:
         type: string
         description: User ID of the person reporting the review
+  ReportReviewResponse:
+    type: object
+    description: Response confirming review report.
+    properties:
+      success:
+        type: boolean
+        example: true
+      id:
+        type: string
+        description: The ID of the reported review.
+      toast:
+        type: string
+        example: Review reported successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - id
   ReviewResponseRequest:
     type: object
     required:
@@ -3801,6 +5138,40 @@ definitions:
         type: string
         maxLength: 1000
         description: The response text
+  RespondToReviewResponse:
+    type: object
+    description: Response confirming a response was added to a review.
+    properties:
+      success:
+        type: boolean
+        example: true
+      id:
+        type: string
+        description: The ID of the review responded to.
+      toast:
+        type: string
+        example: Response added to review successfully.
+      error:
+        type: string
+        example: null
+    required:
+      - success
+      - id
+  APIResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      error:
+        type: string
+      toast:
+        type: string
+      data:
+        type: object
+        description: Generic data payload (varies by endpoint)
+    required:
+      - success
+      - toast
   OTPRequiredResponse:
     type: object
     properties:
